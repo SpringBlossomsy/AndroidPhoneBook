@@ -6,9 +6,11 @@
 
     <TextView
         android:id="@+id/mylistitem_title"
-        android:layout_width="match_parent"
+        android:layout_width="492dp"
         android:layout_height="match_parent"
         android:layout_weight="2"
+        android:paddingLeft="10sp"
+        android:paddingRight="5sp"
         android:text="TextView"
         android:textSize="24sp" />
 
@@ -17,6 +19,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1"
+        android:paddingLeft="5sp"
+        android:paddingRight="10sp"
         android:text="TextView"
         android:textSize="24sp" />
 </LinearLayout>

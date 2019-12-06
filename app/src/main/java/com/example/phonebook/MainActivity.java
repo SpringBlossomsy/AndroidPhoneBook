@@ -15,6 +15,10 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
@@ -34,8 +38,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
+    public String URL_DOMAIN = "http://192.168.13.34:5000/";
     private List<Map<String, String>> dataList;
     private List<PhoneDto> phoneDtos;
 
@@ -49,7 +55,12 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void getPhoneData() {
-        Toast.makeText(MainActivity.this, "Loding...", Toast.LENGTH_SHORT).show();
+        Animation rotateAnimation = AnimationUtils.loadAnimation(this, R.anim.anim_circle_rotate);
+        ImageView mIvRotate = findViewById(R.id.imageView2);
+        LinearInterpolator interpolator = new LinearInterpolator();
+        rotateAnimation.setInterpolator(interpolator);
+        mIvRotate.startAnimation(rotateAnimation);
+
         dataList = new ArrayList<Map<String, String>>();
 
         Thread thread = new Thread() {
@@ -59,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
                 HttpURLConnection connection = null;
                 BufferedReader reader = null;
                 try {
-                    URL url = new URL("https://bb0cb017-e4c3-4fa7-ba5a-f8461a64e722.mock.pstmn.io/test");
+                    URL url = new URL(URL_DOMAIN + "api/phone/list/");
                     connection = (HttpURLConnection) url.openConnection();
                     //设置请求方法
                     connection.setRequestMethod("GET");
@@ -82,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.i("Api result", result.toString());
 
                     JSONObject json = new JSONObject(result.toString());
-                    JSONArray phones = json.getJSONArray("phone");
+                    JSONArray phones = json.getJSONArray("phone_list");
                     for (int i = 0; i < phones.length(); i++) {
                         JSONObject phone = phones.getJSONObject(i);
                         Map<String, String> map = new HashMap<String, String>();
@@ -100,14 +111,14 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (ProtocolException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 } catch (Exception e) {
                     e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this,  " Fetch api failed.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 } finally {
                     if (reader != null) {
                         try {
@@ -119,6 +130,9 @@ public class MainActivity extends AppCompatActivity {
                     if (connection != null) {//关闭连接
                         connection.disconnect();
                     }
+                    ImageView mIvRotate = findViewById(R.id.imageView2);
+                    mIvRotate.clearAnimation();
+                    mIvRotate.setVisibility(View.INVISIBLE);
                 }
 
             }
@@ -237,6 +251,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void exportPhoneToLocal(View view) {
         check();
+    }
+
+    public void addPhone(View view) {
+        Toast.makeText(MainActivity.this, "Loding...", Toast.LENGTH_SHORT).show();
     }
 
 }

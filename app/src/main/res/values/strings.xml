@@ -3,4 +3,5 @@
     <string name="refresh">Refresh</string>
     <string name="export_local">Export Local</string>
     <string name="phone_title">Phone List</string>
+    <string name="zh_cn_phone_title">联系人</string>
 </resources>

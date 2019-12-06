@@ -4,4 +4,9 @@
     <string name="export_local">Export Local</string>
     <string name="phone_title">Phone List</string>
     <string name="zh_cn_phone_title">联系人</string>
+    <string name="phone_detail_title">联系人详情</string>
+    <string name="phone_add_title">新建联系人</string>
+    <string name="phone_update_title">编辑联系人</string>
+    <string name="phone_name">称呼</string>
+    <string name="phone">手机</string>
 </resources>

@@ -20,7 +20,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
@@ -45,12 +44,30 @@ public class MainActivity extends AppCompatActivity {
     public String URL_DOMAIN = "http://192.168.13.34:5000/";
     private List<Map<String, String>> dataList;
     private List<PhoneDto> phoneDtos;
+    ReFlashListView list_test;
+    private int page = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        list_test = (ReFlashListView) findViewById(R.id.listview1);
+        list_test.setOnRefreshListener(new ReFlashListView.onRefreshListener() {
+            @Override
+            public void onRefresh() {
+                //TODO: 下拉刷新的时候回调该方法，加载数据
+                page = 1;
+                getPhoneData();
+            }
+
+            @Override
+            public void onLoadMore() {
+                // TODO: 上拉加载下一页数据的回调
+                page = page + 1;
+                getPhoneData();
+            }
+        });
         getPhoneData();
     }
 
@@ -71,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 HttpURLConnection connection = null;
                 BufferedReader reader = null;
                 try {
-                    URL url = new URL(URL_DOMAIN + "api/phone/list/");
+                    URL url = new URL(URL_DOMAIN + "api/phone/list/?page=" + Integer.toString(page));
                     connection = (HttpURLConnection) url.openConnection();
                     //设置请求方法
                     connection.setRequestMethod("GET");
@@ -106,9 +123,14 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            ListView list_test = (ListView) findViewById(R.id.listview1);
-                            SimpleAdapter adapter = new SimpleAdapter(MainActivity.this, dataList, R.layout.mylistitem, new String[] { "title", "value" }, new int[] { R.id.mylistitem_title, R.id.mylistitem_value });
-                            list_test.setAdapter(adapter);
+                            if(dataList.size() != 0) {
+                                SimpleAdapter adapter = new SimpleAdapter(MainActivity.this, dataList, R.layout.mylistitem, new String[]{"title", "value"}, new int[]{R.id.mylistitem_title, R.id.mylistitem_value});
+                                list_test.setAdapter(adapter);
+                                list_test.onRefreshComplete(false);
+                            } else {
+                                Toast.makeText(MainActivity.this,  " 数据加载完毕...", Toast.LENGTH_SHORT).show();
+                                list_test.onRefreshComplete(true);
+                            }
                         }
                     });
 

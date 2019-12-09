@@ -57,7 +57,7 @@
         app:layout_constraintTop_toBottomOf="@+id/textView3" />
 
 
-    <ListView
+    <com.example.phonebook.ReFlashListView
         android:id="@+id/listview1"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -75,7 +75,7 @@
         app:layout_constraintTop_toBottomOf="@+id/divider"
         app:layout_constraintVertical_bias="1.0" >
 
-    </ListView>
+    </com.example.phonebook.ReFlashListView>
 
     <ImageButton
         android:id="@+id/imageButton"

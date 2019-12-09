@@ -69,13 +69,13 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
     private ProgressBar pbProgress;
 
     /**
-     * 下拉刷新按下时Y抽坐标
+     * 下拉刷新按下时Y轴坐标
      */
     private float startY;
     //private int startY = -1;
 
     /**
-     * 下拉刷新移动时Y抽坐标
+     * 下拉刷新移动时Y轴坐标
      */
     private float endY;
 
@@ -322,7 +322,7 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
             ivArrow.setVisibility(VISIBLE);
 
             //设置刷新时间,只有刷新成功之后才更新时间
-            if (success) {
+            if (success){
                 tvTime.setText("最后刷新时间:" + getCurrentTime());
             }
         }

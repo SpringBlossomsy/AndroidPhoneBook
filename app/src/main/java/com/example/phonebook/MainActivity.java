@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     public String URL_DOMAIN = "http://192.168.13.34:5000/";
     private List<Map<String, String>> dataList;
     private List<PhoneDto> phoneDtos;
+    private SimpleAdapter adapter;
     ReFlashListView list_test;
     private int page = 1;
 
@@ -58,21 +59,21 @@ public class MainActivity extends AppCompatActivity {
             public void onRefresh() {
                 //TODO: 下拉刷新的时候回调该方法，加载数据
                 page = 1;
-                getPhoneData();
+                getPhoneData("Refresh");
             }
 
             @Override
             public void onLoadMore() {
                 // TODO: 上拉加载下一页数据的回调
                 page = page + 1;
-                getPhoneData();
+                getPhoneData("Load");
             }
         });
-        getPhoneData();
+        getPhoneData("Normal");
     }
 
 
-    public void getPhoneData() {
+    public void getPhoneData(final String status) {
         Animation rotateAnimation = AnimationUtils.loadAnimation(this, R.anim.anim_circle_rotate);
         ImageView mIvRotate = findViewById(R.id.imageView2);
         LinearInterpolator interpolator = new LinearInterpolator();
@@ -124,9 +125,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             if(dataList.size() != 0) {
-                                SimpleAdapter adapter = new SimpleAdapter(MainActivity.this, dataList, R.layout.mylistitem, new String[]{"title", "value"}, new int[]{R.id.mylistitem_title, R.id.mylistitem_value});
+                                adapter = new SimpleAdapter(MainActivity.this, dataList, R.layout.mylistitem, new String[]{"title", "value"}, new int[]{R.id.mylistitem_title, R.id.mylistitem_value});
                                 list_test.setAdapter(adapter);
-                                list_test.onRefreshComplete(false);
+                                list_test.onRefreshComplete(true);
                             } else {
                                 Toast.makeText(MainActivity.this,  " 数据加载完毕...", Toast.LENGTH_SHORT).show();
                                 list_test.onRefreshComplete(true);
@@ -164,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void refreshPhoneData(View view) {
-        getPhoneData();
+        getPhoneData("Refresh");
     }
 
     private boolean isHaveExistName(List<PhoneDto> phoneDtos, String name) {

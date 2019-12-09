@@ -9,6 +9,7 @@ import android.Manifest;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -254,7 +255,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void addPhone(View view) {
-        Toast.makeText(MainActivity.this, "Loding...", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, DetailActivity.class);
+        String message = "ADD";
+        intent.putExtra("STATUS", message);
+        startActivity(intent);
     }
 
 }

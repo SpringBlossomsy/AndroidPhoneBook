@@ -13,4 +13,7 @@
     <string name="loading">Loading...</string>
     <string name="add">添加</string>
     <string name="finish">完成</string>
+    <string name="edit">编辑</string>
+    <string name="cancel">取消</string>
+    <string name="return_string">返回</string>
 </resources>

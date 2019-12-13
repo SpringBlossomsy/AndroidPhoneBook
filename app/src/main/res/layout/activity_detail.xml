@@ -7,6 +7,19 @@
     tools:context=".DetailActivity">
 
     <TextView
+        android:id="@+id/edit_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:clickable="true"
+        android:onClick="leftButtonMethod"
+        android:text="@string/edit"
+        android:textColor="#3F9E47"
+        android:textSize="24sp"
+        app:layout_constraintBaseline_toBaselineOf="@+id/textView"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,6 +29,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:layout_marginTop="16dp"
+        android:background="@android:color/darker_gray"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
 
     <ImageView
         android:id="@+id/portrait"
@@ -89,7 +112,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:clickable="true"
-        android:onClick="addPhone"
+        android:onClick="rightButtonMethod"
         android:text="@string/finish"
         android:textColor="#3F9E47"
         android:textSize="24sp"

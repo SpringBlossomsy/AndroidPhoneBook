@@ -3,9 +3,7 @@ package com.example.phonebook;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import android.Manifest;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -19,8 +17,10 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
+import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -31,16 +31,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     public String URL_DOMAIN = "http://192.168.13.34:5000/";
     private List<Map<String, String>> dataList;
     private List<PhoneDto> phoneDtos;
@@ -54,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         list_test = (ReFlashListView) findViewById(R.id.listview1);
+        list_test.setOnItemClickListener(this);
         list_test.setOnRefreshListener(new ReFlashListView.onRefreshListener() {
             @Override
             public void onRefresh() {
@@ -70,6 +68,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         getPhoneData("Normal");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i("TEST", "onResume");
+//        page = 1;
+//        getPhoneData("Refresh");
     }
 
 
@@ -256,11 +262,11 @@ public class MainActivity extends AppCompatActivity {
             android.Manifest.permission.WRITE_CONTACTS,
         };
 
-//        if(hasPermissions(MainActivity.this, PERMISSIONS)){
+        if(hasPermissions(MainActivity.this, PERMISSIONS)){
             ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS,201);
-//        } else {
-//            exportPhones();
-//        }
+        } else {
+            exportPhones();
+        }
     }
 
     @Override
@@ -284,5 +290,17 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        //通过view获取其内部的组件，进而进行操作
+        String name = (String) ((TextView)view.findViewById(R.id.mylistitem_title)).getText();
+        String phone = (String) ((TextView)view.findViewById(R.id.mylistitem_value)).getText();
+
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra("STATUS", "DETAIL");
+        intent.putExtra("NAME", name);
+        intent.putExtra("PHONE", phone);
+        startActivity(intent);
+    }
 }
 

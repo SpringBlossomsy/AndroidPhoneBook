@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -74,6 +75,8 @@ public class DetailActivity extends AppCompatActivity {
         Button upload_btn = findViewById(R.id.upload_btn);
         EditText name_edit = findViewById(R.id.name);
         EditText phone_edit = findViewById(R.id.phone);
+        ImageView call_icon = findViewById(R.id.call_icon);
+        ImageView message_icon = findViewById(R.id.message_icon);
         switch (status) {
             case "ADD":
                 textView.setText(R.string.phone_add_title);
@@ -81,14 +84,20 @@ public class DetailActivity extends AppCompatActivity {
                 edit_btn.setText(R.string.cancel);
                 portrait.setImageResource(R.drawable.user_portrait);
                 upload_btn.setVisibility(View.VISIBLE);
+                call_icon.setVisibility(View.INVISIBLE);
+                message_icon.setVisibility(View.INVISIBLE);
                 name_edit.setText(null);
                 phone_edit.setText(null);
+                name_edit.setInputType(InputType.TYPE_CLASS_TEXT);
+                phone_edit.setInputType(InputType.TYPE_CLASS_TEXT);
                 break;
             case "UPDATE":
                 textView.setText(R.string.phone_update_title);
                 finish_btn.setText(R.string.finish);
                 edit_btn.setText(R.string.cancel);
                 upload_btn.setVisibility(View.VISIBLE);
+                call_icon.setVisibility(View.INVISIBLE);
+                message_icon.setVisibility(View.INVISIBLE);
 
                 if(imageURL.length() > 0) {
                     setURLimage(URL_DOMAIN + imageURL);
@@ -96,12 +105,16 @@ public class DetailActivity extends AppCompatActivity {
 
                 name_edit.setText(name);
                 phone_edit.setText(phone);
+                name_edit.setInputType(InputType.TYPE_CLASS_TEXT);
+                phone_edit.setInputType(InputType.TYPE_CLASS_TEXT);
                 break;
             case "DETAIL":
                 textView.setText(R.string.phone_detail_title);
                 finish_btn.setText(R.string.edit);
                 edit_btn.setText(R.string.return_string);
                 upload_btn.setVisibility(View.INVISIBLE);
+                call_icon.setVisibility(View.VISIBLE);
+                message_icon.setVisibility(View.VISIBLE);
 
                 if(imageURL.length() > 0) {
                     setURLimage(URL_DOMAIN + imageURL);
@@ -109,6 +122,8 @@ public class DetailActivity extends AppCompatActivity {
 
                 name_edit.setText(name);
                 phone_edit.setText(phone);
+                name_edit.setInputType(InputType.TYPE_NULL);
+                phone_edit.setInputType(InputType.TYPE_NULL);
                 break;
             default:
                 break;
@@ -192,6 +207,18 @@ public class DetailActivity extends AppCompatActivity {
         Intent getImage = new Intent(Intent.ACTION_PICK, null);
         getImage.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");//这是图片类型
         startActivityForResult(getImage, 2);
+    }
+
+    public void clickToCallPhone(View view) {
+        EditText phone_edit = findViewById(R.id.phone);
+        Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + phone_edit.getText().toString()));
+        startActivity(intent);
+    }
+
+    public void clickToSendMessge(View view) {
+        EditText phone_edit = findViewById(R.id.phone);
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("smsto:" + phone_edit.getText().toString()));
+        startActivity(intent);
     }
 
     @Override

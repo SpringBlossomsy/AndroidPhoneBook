@@ -3,6 +3,7 @@ package com.example.phonebook;
 public class PhoneDto {
     private String name;        //联系人姓名
     private String telPhone;    //电话号码
+    private String image;
 
 
     public String getName() {
@@ -19,6 +20,14 @@ public class PhoneDto {
 
     public void setTelPhone(String telPhone) {
         this.telPhone = telPhone;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 
     public PhoneDto() {

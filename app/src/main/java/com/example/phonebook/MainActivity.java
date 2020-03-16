@@ -25,6 +25,9 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.phonebook.models.PhoneDto;
+import com.example.phonebook.utils.PhoneUtil;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -43,21 +46,21 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     public String URL_DOMAIN = "http://192.168.13.34:5000";
     private List<Map<String, String>> dataList;
-    private List<PhoneDto> phoneDtos;
+    private List<PhoneDto> localPhoneDots;
+    private List<PhoneDto> newPhoneDots;
     private SimpleAdapter adapter;
-    ReFlashListView list_test;
+    ReFlashListView reFlashListView;
     private int page = 1;
     private Bitmap[] bmpArray;
-    private byte[] avatar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        list_test = (ReFlashListView) findViewById(R.id.listview1);
-        list_test.setOnItemClickListener(this);
-        list_test.setOnRefreshListener(new ReFlashListView.onRefreshListener() {
+        reFlashListView = (ReFlashListView) findViewById(R.id.listview1);
+        reFlashListView.setOnItemClickListener(this);
+        reFlashListView.setOnRefreshListener(new ReFlashListView.onRefreshListener() {
             @Override
             public void onRefresh() {
                 //TODO: 下拉刷新的时候回调该方法，加载数据
@@ -93,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         dataList = new ArrayList<Map<String, String>>();
         bmpArray = new Bitmap[20];
+        newPhoneDots = new ArrayList<>();
 
         Thread thread = new Thread() {
 
@@ -132,13 +136,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         map.put("value", phone.getString("phone"));
                         map.put("image", phone.getString("image"));
                         dataList.add(map);
+//                        try {
+//                            URL imageUrl = new URL(URL_DOMAIN + phone.getString("image"));
+//                            bmpArray[i] = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
+//                        } catch (Exception e){
+//                            bmpArray[i] = null;
+//                        }
+                        Bitmap imageBmp;
                         try {
                             URL imageUrl = new URL(URL_DOMAIN + phone.getString("image"));
-                            bmpArray[i] = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
+                            imageBmp = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
                         } catch (Exception e){
-                            bmpArray[i] = null;
+                            imageBmp = null;
                         }
-
+                        bmpArray[i] = imageBmp;
+                        newPhoneDots.add(new PhoneDto(
+                                phone.getString("name"),
+                                phone.getString("phone"),
+                                phone.getString("image"),
+                                imageBmp));
                     }
                     Log.i("DataList", dataList.toString());
                     runOnUiThread(new Runnable() {
@@ -146,11 +162,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         public void run() {
                             if(dataList.size() != 0) {
                                 adapter = new SimpleAdapter(MainActivity.this, dataList, R.layout.mylistitem, new String[]{"title", "value"}, new int[]{R.id.mylistitem_title, R.id.mylistitem_value});
-                                list_test.setAdapter(adapter);
-                                list_test.onRefreshComplete(true);
+                                reFlashListView.setAdapter(adapter);
+                                reFlashListView.onRefreshComplete(true);
                             } else {
                                 Toast.makeText(MainActivity.this,  " 数据加载完毕...", Toast.LENGTH_SHORT).show();
-                                list_test.onRefreshComplete(true);
+                                reFlashListView.onRefreshComplete(true);
                             }
                         }
                     });
@@ -184,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         thread.start();
     }
 
-    public boolean insert(String given_name, String mobile_number, String imageURL, Bitmap bmp) {
+    public boolean insert(String given_name, String mobile_number, Bitmap bmp) {
         try {
             ContentValues values = new ContentValues();
 
@@ -216,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if (bmp != null) {
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, os);
-                avatar = os.toByteArray();
+                byte[] avatar = os.toByteArray();
                 values.put(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
                 values.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE);
                 values.put(ContactsContract.CommonDataKinds.Photo.PHOTO, avatar);
@@ -233,26 +249,37 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     private void exportPhones() {
-        PhoneUtil phoneUtil = new PhoneUtil(this);
-        phoneDtos = phoneUtil.getPhone();
-        Log.i("Phones Detail", phoneDtos.toString());
-        Log.i("Data Detail", dataList.toString());
-        int i = 0;
-        for (Map<String, String> map: dataList) {
-            String name = map.get("title");
-            String phone = map.get("value");
-            String image = map.get("image");
+//        PhoneUtil phoneUtil = new PhoneUtil(this);
+//        localPhoneDots = phoneUtil.getPhone();
+//        Log.i("Phones Detail", localPhoneDots.toString());
+//        Log.i("Data Detail", dataList.toString());
+//        int i = 0;
+//        for (Map<String, String> map: dataList) {
+//            String name = map.get("title");
+//            String phone = map.get("value");
+//            String image = map.get("image");
+//
+//            if (insert(name, phone,  bmpArray[i]) == false) {
+//                Toast.makeText(MainActivity.this, name + "-" + phone + " export failed.", Toast.LENGTH_SHORT).show();
+//            } else {
+//                Toast.makeText(MainActivity.this, name + "-" + phone + " export success.", Toast.LENGTH_SHORT).show();
+//            }
+//            i = i + 1;
+//        }
+//        localPhoneDots = phoneUtil.getPhone();
+//        Log.i("After Phone Detail", localPhoneDots.toString());
+//        Log.i("After Data Detail", dataList.toString());
 
-            if (insert(name, phone, image, bmpArray[i]) == false) {
+        for (PhoneDto phoneDto: newPhoneDots) {
+            String name = phoneDto.getName();
+            String phone = phoneDto.getTelPhone();
+            Bitmap imageBmp = phoneDto.getImageBmp();
+            if (insert(name, phone, imageBmp) == false) {
                 Toast.makeText(MainActivity.this, name + "-" + phone + " export failed.", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, name + "-" + phone + " export success.", Toast.LENGTH_SHORT).show();
             }
-            i = i + 1;
         }
-        phoneDtos = phoneUtil.getPhone();
-        Log.i("After Phone Detail", phoneDtos.toString());
-        Log.i("After Data Detail", dataList.toString());
 
     }
 
@@ -299,7 +326,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        //通过view获取其内部的组件，进而进行操作
         String name = (String) ((TextView)view.findViewById(R.id.mylistitem_title)).getText();
         String phone = (String) ((TextView)view.findViewById(R.id.mylistitem_value)).getText();
         String image = new String();

@@ -1,11 +1,12 @@
-package com.example.phonebook;
+package com.example.phonebook.utils;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
-import android.util.Log;
+
+import com.example.phonebook.models.PhoneDto;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,9 +1,12 @@
-package com.example.phonebook;
+package com.example.phonebook.models;
+
+import android.graphics.Bitmap;
 
 public class PhoneDto {
-    private String name;        //联系人姓名
-    private String telPhone;    //电话号码
+    private String name;
+    private String telPhone;
     private String image;
+    private Bitmap imageBmp;
 
 
     public String getName() {
@@ -30,12 +33,27 @@ public class PhoneDto {
         this.image = image;
     }
 
+    public Bitmap getImageBmp() {
+        return imageBmp;
+    }
+
+    public void setImageBmp(Bitmap imageBmp) {
+        this.imageBmp = imageBmp;
+    }
+
     public PhoneDto() {
     }
 
     public PhoneDto(String name, String telPhone) {
         this.name = name;
         this.telPhone = telPhone;
+    }
+
+    public PhoneDto(String name, String telPhone, String image, Bitmap imageBmp) {
+        this.name = name;
+        this.telPhone = telPhone;
+        this.image = image;
+        this.imageBmp = imageBmp;
     }
 
     @Override

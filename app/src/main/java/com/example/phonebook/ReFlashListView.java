@@ -12,8 +12,6 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.example.phonebook.R;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -208,14 +206,6 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
                 startY = ev.getY();
                 break;
             case MotionEvent.ACTION_MOVE:
-
-                //添加了广告轮播头布局：
-                //当用户按住广告图片进行下拉时ACTION_DOWN会被viewpager消费掉，
-                //导致startY没有被赋值，此处需要重新获取一下
-                //                if (startY == -1) {
-                //                    startY = (int) ev.getY();
-                //                }
-
                 //如果此时正在刷新，跳出循环，不让再次刷新
                 if (mCurrentState == STATE_REFRESHING) {
                     break;
@@ -248,7 +238,7 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
                         //刷新头布局
                         refreshState();
                     }
-                    return true; //当前事件被消费,拦截TouchMove，不让listview处理该次move事件,会造成listview无法滑动
+//                    return false; //当前事件被消费,拦截TouchMove，不让listview处理该次move事件,会造成listview无法滑动
                 }
                 break;
             case MotionEvent.ACTION_UP:
@@ -347,7 +337,6 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
      */
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
-        // TODO: 2016/11/19 滑动状态发生变化的回调
         if (scrollState == SCROLL_STATE_IDLE) { //空闲状态
             int lastVisiblePosition = getLastVisiblePosition();
             //显示最后一个item并且没有加载更多
@@ -368,7 +357,7 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
 
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        // TODO: 2016/11/19 滑动过程的回调
+
     }
 
     /**

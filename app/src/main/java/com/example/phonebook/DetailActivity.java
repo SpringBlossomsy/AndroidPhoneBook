@@ -1,17 +1,13 @@
 package com.example.phonebook;
 
-import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.Image;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
 import android.text.InputType;
 import android.util.Log;
@@ -22,49 +18,42 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class DetailActivity extends AppCompatActivity {
     public String URL_DOMAIN = "http://192.168.13.34:5000";
-    public static final int GET_DATA_SUCCESS = 1;
-    public static final int NETWORK_ERROR = 2;
-    public static final int SERVER_ERROR = 3;
-    //子线程不能操作UI，通过Handler设置图片
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case GET_DATA_SUCCESS:
-                    Bitmap bitmap = (Bitmap) msg.obj;
-                    if(bitmap != null) {
-                        ImageView portrait = findViewById(R.id.portrait);
-                        portrait.setImageBitmap(bitmap);
-                    }
-                    break;
-                case NETWORK_ERROR:
-                    Toast.makeText(DetailActivity.this,"网络连接失败",Toast.LENGTH_SHORT).show();
-                    break;
-                case SERVER_ERROR:
-                    Toast.makeText(DetailActivity.this,"服务器发生错误",Toast.LENGTH_SHORT).show();
-                    break;
-            }
-        }
-    };
     private Uri portraitLocalUri;
+    Bitmap bitmap;
+    String originalStatus;
+    String originalName;
+    String originalPhone;
+    String originalImageURL;
+    Boolean uploadPhoneInfoStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
-        String status = getIntent().getStringExtra("STATUS");
-        String name = getIntent().getStringExtra("NAME");
-        String phone = getIntent().getStringExtra("PHONE");
-        String imageURL = getIntent().getStringExtra("IMAGE");
+        originalStatus = getIntent().getStringExtra("STATUS");
+        originalName = getIntent().getStringExtra("NAME");
+        originalPhone = getIntent().getStringExtra("PHONE");
+        originalImageURL = getIntent().getStringExtra("IMAGE");
 
-        changeView(status, name, phone, imageURL);
+        changeView(originalStatus, originalName, originalPhone, originalImageURL);
     }
 
     private void changeView(String status, String name, String phone, String imageURL) {
@@ -82,7 +71,7 @@ public class DetailActivity extends AppCompatActivity {
                 textView.setText(R.string.phone_add_title);
                 finish_btn.setText(R.string.finish);
                 edit_btn.setText(R.string.cancel);
-                portrait.setImageResource(R.drawable.user_portrait);
+                portrait.setImageResource(R.drawable.portrait);
                 upload_btn.setVisibility(View.VISIBLE);
                 call_icon.setVisibility(View.INVISIBLE);
                 message_icon.setVisibility(View.INVISIBLE);
@@ -100,7 +89,11 @@ public class DetailActivity extends AppCompatActivity {
                 message_icon.setVisibility(View.INVISIBLE);
 
                 if(imageURL.length() > 0) {
-                    setURLimage(URL_DOMAIN + imageURL);
+                    Glide.with(this)
+                            .load(URL_DOMAIN + imageURL)
+                            .placeholder(R.drawable.portrait) //placeholder
+                            .error(R.drawable.portrait) //error
+                            .into(portrait);
                 }
 
                 name_edit.setText(name);
@@ -117,7 +110,11 @@ public class DetailActivity extends AppCompatActivity {
                 message_icon.setVisibility(View.VISIBLE);
 
                 if(imageURL.length() > 0) {
-                    setURLimage(URL_DOMAIN + imageURL);
+                    Glide.with(this)
+                            .load(URL_DOMAIN + imageURL)
+                            .placeholder(R.drawable.portrait) //placeholder
+                            .error(R.drawable.portrait) //error
+                            .into(portrait);
                 }
 
                 name_edit.setText(name);
@@ -130,69 +127,189 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
-    public void setURLimage(final String imageURL) {
-        new Thread() {
+    public boolean uploadPhoneInfo(String status, final String name, final String phone, final Uri localImageUri) {
+        Log.i("Upload Message", status + " " + name + " "+ phone + " " + localImageUri);
+
+        final String uploadURL;
+        switch (status) {
+            case "UPDATE":
+                uploadURL = URL_DOMAIN + "/api/phone/update/";
+                break;
+            default:
+                uploadURL = URL_DOMAIN + "/api/phone/add/";
+                break;
+        }
+        uploadPhoneInfoStatus = true;
+
+        Thread thread = new Thread() {
+
             @Override
             public void run() {
+                final String BOUNDARY = "******";
+                final String  twoHyphens = "--";
+                final String crlf = "\r\n";
+
+                HttpURLConnection connection = null;
+                BufferedReader reader = null;
                 try {
-                    //把传过来的路径转成URL
-                    URL url = new URL(imageURL);
-                    //获取连接
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    //使用GET方法访问网络
-                    connection.setRequestMethod("GET");
-                    //超时时间为10秒
+                    // setup request
+                    URL url = new URL(uploadURL);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setUseCaches(false);
+                    connection.setDoOutput(true);
+
+                    connection.setRequestMethod("POST");
+                    connection.setRequestProperty("Connection", "Keep-Alive");
+                    connection.setRequestProperty("Cache-Control", "no-cache");
+                    connection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + BOUNDARY);
                     connection.setConnectTimeout(10000);
-                    //获取返回码
-                    int code = connection.getResponseCode();
-                    if (code == 200) {
-                        InputStream inputStream = connection.getInputStream();
-                        //使用工厂把网络的输入流生产Bitmap
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                        //利用Message把图片发给Handler
-                        Message msg = Message.obtain();
-                        msg.obj = bitmap;
-                        msg.what = GET_DATA_SUCCESS;
-                        handler.sendMessage(msg);
-                        inputStream.close();
-                    }else {
-                        //服务启发生错误
-                        handler.sendEmptyMessage(SERVER_ERROR);
+                    connection.setReadTimeout(10000);
+
+                    // start content wrapper
+                    DataOutputStream request = new DataOutputStream(connection.getOutputStream());
+
+                    // one field
+                    Date date = new Date();
+                    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+                    String attachmentName = "image";
+                    String attachmentFileName = formatter.format(date) + ".JPEG";
+                    request.writeBytes(twoHyphens + BOUNDARY + crlf);
+                    request.writeBytes("Content-Disposition: form-data; name=\"" +
+                            attachmentName + "\";filename=\"" +
+                            attachmentFileName + "\"" + crlf);
+                    request.writeBytes(crlf);
+
+                    ImageView portrait = findViewById(R.id.portrait);
+                    BitmapDrawable bitmapDrawable = ((BitmapDrawable) portrait.getDrawable());
+                    Bitmap bitmap = bitmapDrawable .getBitmap();
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                    byte[] imageInByte = stream.toByteArray();
+                    request.write(imageInByte);
+
+                    // one field
+                    if (originalName != null) {
+                        request.writeBytes(twoHyphens + BOUNDARY + crlf);
+                        request.writeBytes("Content-Disposition: form-data; name=\"" + "originalName" + "\""+ crlf);
+                        request.writeBytes("Content-Type: text/plain; charset=UTF-8" + crlf);
+                        request.writeBytes(crlf);
+                        request.writeBytes(originalName);
+                        request.flush();
                     }
+
+                    // one field
+                    request.writeBytes(twoHyphens + BOUNDARY + crlf);
+                    request.writeBytes("Content-Disposition: form-data; name=\"" + "name" + "\""+ crlf);
+                    request.writeBytes("Content-Type: text/plain; charset=UTF-8" + crlf);
+                    request.writeBytes(crlf);
+                    request.writeBytes(name);
+                    request.flush();
+
+                    // one field
+                    request.writeBytes(twoHyphens + BOUNDARY + crlf);
+                    request.writeBytes("Content-Disposition: form-data; name=\"" + "phone" + "\""+ crlf);
+                    request.writeBytes("Content-Type: text/plain; charset=UTF-8" + crlf);
+                    request.writeBytes(crlf);
+                    request.writeBytes(phone);
+                    request.flush();
+
+                    // end content wrapper
+                    request.writeBytes(crlf);
+                    request.writeBytes(twoHyphens + BOUNDARY + twoHyphens + crlf);
+
+                    request.flush();
+                    request.close();
+
+                    //返回输入流
+                    InputStream in = connection.getInputStream();
+
+                    //读取输入流
+                    reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder result = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
+                    Log.i("Api result", result.toString());
+
+                    JSONObject json = new JSONObject(result.toString());
+                    final String uploadStatus = json.getString("status");
+                    final String message = json.getString("message");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                    if(uploadStatus == "success") {
+                        Toast.makeText(DetailActivity.this, "upload success", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(DetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                        uploadPhoneInfoStatus = false;
+                    }
+                        }
+                    });
+
                 } catch (Exception e) {
                     e.printStackTrace();
-                    //网络连接错误
-                    handler.sendEmptyMessage(NETWORK_ERROR);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(DetailActivity.this,  "upload failed as exception", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    uploadPhoneInfoStatus = false;
+                } finally {
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (connection != null) {//关闭连接
+                        connection.disconnect();
+                    }
                 }
+
             }
-        }.start();
+        };
+        thread.start();
+        return uploadPhoneInfoStatus;
     }
 
     public void rightButtonMethod(View view) {
         TextView textView = findViewById(R.id.textView);
         String title = (String)textView.getText();
-        Log.i("TEST", title);
+
+        EditText name_edit = findViewById(R.id.name);
+        EditText phone_edit = findViewById(R.id.phone);
+        String newName, newPhone;
         switch (title) {
             case "新建联系人":
                 Log.i("TEST", "Save Phone");
-                DetailActivity.this.finish();
+                newName = name_edit.getText().toString();
+                newPhone = phone_edit.getText().toString();
+
+                if (uploadPhoneInfo("ADD", newName, newPhone, portraitLocalUri)) {
+                    DetailActivity.this.finish();
+                }
                 break;
             case "编辑联系人":
                 Log.i("TEST", "Update Phone");
-                DetailActivity.this.finish();
+                newName = name_edit.getText().toString();
+                newPhone = phone_edit.getText().toString();
+
+                if (uploadPhoneInfo("UPDATE", newName, newPhone, portraitLocalUri)) {
+                    DetailActivity.this.finish();
+                }
                 break;
             case "联系人详情":
                 Log.i("TEST", "Change view");
                 Intent intent = new Intent(this, DetailActivity.class);
                 intent.putExtra("STATUS", "UPDATE");
 
-                EditText name_edit = findViewById(R.id.name);
-                String name = name_edit.getText().toString();
+                newName = name_edit.getText().toString();
+                newPhone = phone_edit.getText().toString();
 
-                EditText phone_edit = findViewById(R.id.phone);
-                String phone = phone_edit.getText().toString();
-
-                changeView("UPDATE", name, phone, "");
+                changeView("UPDATE", newName, newPhone, "");
                 break;
             default:
                 break;
@@ -233,6 +350,18 @@ public class DetailActivity extends AppCompatActivity {
                         portraitLocalUri = data.getData();
                         ImageView portrait = findViewById(R.id.portrait);
                         portrait.setImageURI(portraitLocalUri);
+                        try {
+                            bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), portraitLocalUri);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(DetailActivity.this, "Fail to get local image.", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+
                     }
                     break;
                 default:

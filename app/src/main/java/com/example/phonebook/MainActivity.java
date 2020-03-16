@@ -47,7 +47,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private SimpleAdapter adapter;
     ReFlashListView list_test;
     private int page = 1;
-    private Bitmap bmp;
+    private Bitmap[] bmpArray;
+    private byte[] avatar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mIvRotate.startAnimation(rotateAnimation);
 
         dataList = new ArrayList<Map<String, String>>();
+        bmpArray = new Bitmap[20];
 
         Thread thread = new Thread() {
 
@@ -130,6 +132,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         map.put("value", phone.getString("phone"));
                         map.put("image", phone.getString("image"));
                         dataList.add(map);
+                        try {
+                            URL imageUrl = new URL(URL_DOMAIN + phone.getString("image"));
+                            bmpArray[i] = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
+                        } catch (Exception e){
+                            bmpArray[i] = null;
+                        }
+
                     }
                     Log.i("DataList", dataList.toString());
                     runOnUiThread(new Runnable() {
@@ -175,54 +184,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         thread.start();
     }
 
-    public void refreshPhoneData(View view) {
-        getPhoneData("Refresh");
-    }
-
-    public Bitmap getURLimage(final String imageURL) {
-        bmp = null;
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    //把传过来的路径转成URL
-                    URL url = new URL(imageURL);
-                    //获取连接
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    //使用GET方法访问网络
-                    connection.setRequestMethod("GET");
-                    //超时时间为10秒
-                    connection.setConnectTimeout(10000);
-                    //获取返回码
-                    int code = connection.getResponseCode();
-                    if (code == 200) {
-                        InputStream inputStream = connection.getInputStream();
-                        //使用工厂把网络的输入流生产Bitmap
-                        bmp = BitmapFactory.decodeStream(inputStream);
-                        inputStream.close();
-                    }else {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(MainActivity.this,  " Fetch image failed.", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this,  " Fetch image failed.", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }
-        }.start();
-        return bmp;
-    }
-
-    public boolean insert(String given_name, String mobile_number, String imageURL) {
+    public boolean insert(String given_name, String mobile_number, String imageURL, Bitmap bmp) {
         try {
             ContentValues values = new ContentValues();
 
@@ -251,17 +213,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             // 向data表插入头像数据
-            if (imageURL.length() > 0) {
-                imageURL = URL_DOMAIN + imageURL;
-                Bitmap sourceBitmap = getURLimage(imageURL);
-                final ByteArrayOutputStream os = new ByteArrayOutputStream();
-                // 将Bitmap压缩成PNG编码，质量为100%存储
-                sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
-                byte[] avatar = os.toByteArray();
+            if (bmp != null) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, os);
+                avatar = os.toByteArray();
                 values.put(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
                 values.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE);
                 values.put(ContactsContract.CommonDataKinds.Photo.PHOTO, avatar);
                 getContentResolver().insert(ContactsContract.Data.CONTENT_URI,values);
+
+
             }
 
         } catch (Exception e) {
@@ -276,16 +237,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         phoneDtos = phoneUtil.getPhone();
         Log.i("Phones Detail", phoneDtos.toString());
         Log.i("Data Detail", dataList.toString());
+        int i = 0;
         for (Map<String, String> map: dataList) {
             String name = map.get("title");
             String phone = map.get("value");
             String image = map.get("image");
 
-            if (insert(name, phone, image) == false) {
+            if (insert(name, phone, image, bmpArray[i]) == false) {
                 Toast.makeText(MainActivity.this, name + "-" + phone + " export failed.", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, name + "-" + phone + " export success.", Toast.LENGTH_SHORT).show();
             }
+            i = i + 1;
         }
         phoneDtos = phoneUtil.getPhone();
         Log.i("After Phone Detail", phoneDtos.toString());
@@ -304,20 +267,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         return true;
     }
 
-    private void check() {
-        //判断是否有权限
-        String[] PERMISSIONS = {
-            android.Manifest.permission.READ_CONTACTS,
-            android.Manifest.permission.WRITE_CONTACTS,
-        };
-
-        if(hasPermissions(MainActivity.this, PERMISSIONS)){
-            ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS,201);
-        } else {
-            exportPhones();
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -329,7 +278,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     public void exportPhoneToLocal(View view) {
-        check();
+        String[] PERMISSIONS = {
+                android.Manifest.permission.READ_CONTACTS,
+                android.Manifest.permission.WRITE_CONTACTS,
+        };
+
+        if(hasPermissions(MainActivity.this, PERMISSIONS)){
+            ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS,201);
+        } else {
+            exportPhones();
+        }
     }
 
     public void addPhone(View view) {

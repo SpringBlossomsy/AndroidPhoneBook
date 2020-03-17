@@ -1,4 +1,4 @@
-package com.example.phonebook;
+package com.example.phonebook.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.example.phonebook.R;
 
 import org.json.JSONObject;
 
@@ -36,12 +37,14 @@ import java.util.Date;
 public class DetailActivity extends AppCompatActivity {
     public String URL_DOMAIN = "http://192.168.13.34:5000";
     private Uri portraitLocalUri;
-    Bitmap bitmap;
-    String originalStatus;
-    String originalName;
-    String originalPhone;
-    String originalImageURL;
-    Boolean uploadPhoneInfoStatus;
+    private Bitmap bitmap;
+    private String originalStatus;
+    private String originalName;
+    private String originalPhone;
+    private String originalImageURL;
+    private Boolean uploadPhoneInfoStatus;
+    private int position;
+    private String newImageURL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +55,8 @@ public class DetailActivity extends AppCompatActivity {
         originalName = getIntent().getStringExtra("NAME");
         originalPhone = getIntent().getStringExtra("PHONE");
         originalImageURL = getIntent().getStringExtra("IMAGE");
+        position = getIntent().getIntExtra("POSITION", -1);
+        newImageURL = "";
 
         changeView(originalStatus, originalName, originalPhone, originalImageURL);
     }
@@ -91,7 +96,7 @@ public class DetailActivity extends AppCompatActivity {
                 if(imageURL.length() > 0) {
                     Glide.with(this)
                             .load(URL_DOMAIN + imageURL)
-                            .placeholder(R.drawable.portrait) //placeholder
+                            .placeholder(R.drawable.portrait)
                             .error(R.drawable.portrait) //error
                             .into(portrait);
                 }
@@ -110,9 +115,10 @@ public class DetailActivity extends AppCompatActivity {
                 message_icon.setVisibility(View.VISIBLE);
 
                 if(imageURL.length() > 0) {
+                    Log.i("TEST", imageURL);
                     Glide.with(this)
                             .load(URL_DOMAIN + imageURL)
-                            .placeholder(R.drawable.portrait) //placeholder
+                            .placeholder(R.drawable.portrait)
                             .error(R.drawable.portrait) //error
                             .into(portrait);
                 }
@@ -235,6 +241,7 @@ public class DetailActivity extends AppCompatActivity {
                     JSONObject json = new JSONObject(result.toString());
                     final String uploadStatus = json.getString("status");
                     final String message = json.getString("message");
+                    newImageURL = json.getString("image");
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -289,6 +296,12 @@ public class DetailActivity extends AppCompatActivity {
                 newPhone = phone_edit.getText().toString();
 
                 if (uploadPhoneInfo("ADD", newName, newPhone, portraitLocalUri)) {
+                    Intent intent = new Intent(this, DetailActivity.class);
+                    intent.putExtra("STATUS", "ADD");
+                    intent.putExtra("NAME", newName);
+                    intent.putExtra("PHONE", newPhone);
+                    intent.putExtra("IMAGE", newImageURL);
+                    setResult(RESULT_OK, intent);
                     DetailActivity.this.finish();
                 }
                 break;
@@ -298,6 +311,13 @@ public class DetailActivity extends AppCompatActivity {
                 newPhone = phone_edit.getText().toString();
 
                 if (uploadPhoneInfo("UPDATE", newName, newPhone, portraitLocalUri)) {
+                    Intent intent = new Intent(this, DetailActivity.class);
+                    intent.putExtra("STATUS", "UPDATE");
+                    intent.putExtra("NAME", newName);
+                    intent.putExtra("PHONE", newPhone);
+                    intent.putExtra("IMAGE", newImageURL);
+                    intent.putExtra("POSITION", position);
+                    setResult(RESULT_OK, intent);
                     DetailActivity.this.finish();
                 }
                 break;
@@ -350,17 +370,6 @@ public class DetailActivity extends AppCompatActivity {
                         portraitLocalUri = data.getData();
                         ImageView portrait = findViewById(R.id.portrait);
                         portrait.setImageURI(portraitLocalUri);
-                        try {
-                            bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), portraitLocalUri);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(DetailActivity.this, "Fail to get local image.", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        }
 
                     }
                     break;

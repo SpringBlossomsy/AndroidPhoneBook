@@ -1,4 +1,4 @@
-package com.example.phonebook;
+package com.example.phonebook.utils;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -25,11 +25,14 @@ public class MyBaseAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
+        if (mPhoneDtoList == null) {
+            return 0;
+        }
         return mPhoneDtoList.size();
     }
 
     @Override
-    public Object getItem(int position) {
+    public PhoneDto getItem(int position) {
         return mPhoneDtoList.get(position);
     }
 
@@ -43,7 +46,7 @@ public class MyBaseAdapter extends BaseAdapter {
         LayoutInflater inflater = (LayoutInflater) parent.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         MylistitemBinding binding = MylistitemBinding.inflate(inflater, parent, false);
-        binding.setPhoneDto(mPhoneDtoList.get(position));
+        binding.setPhoneDto(getItem(position));
 
         return binding.getRoot();
     }

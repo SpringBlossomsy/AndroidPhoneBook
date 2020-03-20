@@ -1,4 +1,4 @@
-package com.example.phonebook;
+package com.example.phonebook.utils;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -11,6 +11,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.example.phonebook.R;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -207,7 +209,7 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
                 break;
             case MotionEvent.ACTION_MOVE:
                 //如果此时正在刷新，跳出循环，不让再次刷新
-                if (mCurrentState == STATE_REFRESHING) {
+                if (mCurrentState == STATE_REFRESHING || isLoadMore == true) {
                     break;
                     //return super.onTouchEvent(ev); //或者这样写，执行父类的处理
                 }
@@ -340,7 +342,7 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
         if (scrollState == SCROLL_STATE_IDLE) { //空闲状态
             int lastVisiblePosition = getLastVisiblePosition();
             //显示最后一个item并且没有加载更多
-            if (lastVisiblePosition == getCount() - 1 && !isLoadMore) {
+            if (lastVisiblePosition == getCount() - 1 && !isLoadMore && mCurrentState != STATE_REFRESHING) {
                 isLoadMore = true;
                 mFooterView.setPadding(0, 0, 0, 0); //显示
 
@@ -352,6 +354,19 @@ public class ReFlashListView extends ListView implements AbsListView.OnScrollLis
                     onRefreshListener.onLoadMore();
                 }
             }
+        }
+    }
+
+    public void myOnRefersh() {
+        mCurrentState = STATE_REFRESHING;
+        refreshState();
+
+        //正在刷新时完整展示头布局
+        mHeadView.setPadding(0, 0, 0, 0);
+
+        //接口回调，通知加载数据
+        if (onRefreshListener != null) {
+            onRefreshListener.onRefresh();
         }
     }
 

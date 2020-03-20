@@ -3,191 +3,104 @@ package com.example.phonebook.activity;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.view.animation.LinearInterpolator;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.example.phonebook.MyBaseAdapter;
+import com.example.phonebook.utils.MyBaseAdapter;
 import com.example.phonebook.R;
-import com.example.phonebook.ReFlashListView;
+import com.example.phonebook.utils.ReFlashListView;
 import com.example.phonebook.models.PhoneDto;
 import com.example.phonebook.utils.PhoneUtil;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.phonebook.data.PhoneListViewModel;
+
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
-    public String URL_DOMAIN = "http://192.168.13.34:5000";
-    private List<PhoneDto> newPhoneDots;
-    private List<PhoneDto> tempPhoneDots;
+    PhoneListViewModel listModel;
     private ReFlashListView reFlashListView;
     private MyBaseAdapter adapter;
     private int page = 1;
-    private int perpage = 15;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        newPhoneDots = new ArrayList<>();
 
         reFlashListView = (ReFlashListView) findViewById(R.id.listview1);
+        listModel = ViewModelProviders.of(this).get(PhoneListViewModel.class);
+        listModel.getPhoneDtos().observe(this, new Observer<List<PhoneDto>>() {
+            @Override
+            public void onChanged(List<PhoneDto> phoneDtos) {
+                if (phoneDtos != null) {
+                    adapter = new MyBaseAdapter(listModel.getPhoneDtos().getValue());
+                    reFlashListView.setAdapter(adapter);
+                    reFlashListView.onRefreshComplete(true);
+                }
+                ImageView mIvRotate = findViewById(R.id.imageView2);
+                mIvRotate.clearAnimation();
+                mIvRotate.setVisibility(View.INVISIBLE);
+                adapter.notifyDataSetChanged();
+            }
+        });
+        listModel.getPage().observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer integer) {
+                if (integer != null) {
+                    listModel.loadPhoneDtos(integer);
+                }
+            }
+        });
+        listModel.getMessage().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String message) {
+                if (message != null) {
+                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         reFlashListView.setOnItemClickListener(this);
         reFlashListView.setOnRefreshListener(new ReFlashListView.onRefreshListener() {
             @Override
             public void onRefresh() {
                 //TODO: 下拉刷新的时候回调该方法，加载数据
-                if (page > 1){
-                    page = page - 1;
+                Integer newPage = listModel.getPage().getValue();
+                if (newPage > 1){
+                    newPage = newPage - new Integer(1);
                 }
-                getPhoneData("Refresh", page);
+                listModel.getPage().setValue(newPage);
             }
 
             @Override
             public void onLoadMore() {
                 // TODO: 上拉加载下一页数据的回调
-                page = page + 1;
-                getPhoneData("Load", page);
+                Integer newPage = listModel.getPage().getValue()+new Integer(1);
+                listModel.getPage().setValue(newPage);
             }
         });
-        getPhoneData("Normal", page);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i("TEST", "onResume");
-//        page = 1;
-//        getPhoneData("Refresh");
-    }
-
-
-    public void getPhoneData(final String status, final int newPage) {
-        Animation rotateAnimation = AnimationUtils.loadAnimation(this, R.anim.anim_circle_rotate);
-        ImageView mIvRotate = findViewById(R.id.imageView2);
-        LinearInterpolator interpolator = new LinearInterpolator();
-        rotateAnimation.setInterpolator(interpolator);
-        mIvRotate.startAnimation(rotateAnimation);
-
-        tempPhoneDots = new ArrayList<>();
-
-        Thread thread = new Thread() {
-
-            @Override
-            public void run() {
-                HttpURLConnection connection = null;
-                BufferedReader reader = null;
-                try {
-                    URL url = new URL(URL_DOMAIN + "/api/phone/list/?page=" + Integer.toString(newPage));
-                    connection = (HttpURLConnection) url.openConnection();
-                    //设置请求方法
-                    connection.setRequestMethod("GET");
-                    //设置连接超时时间（毫秒）
-                    connection.setConnectTimeout(10000);
-                    //设置读取超时时间（毫秒）
-                    connection.setReadTimeout(10000);
-                    connection.connect();
-
-                    //返回输入流
-                    InputStream in = connection.getInputStream();
-
-                    //读取输入流
-                    reader = new BufferedReader(new InputStreamReader(in));
-                    StringBuilder result = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        result.append(line);
-                    }
-                    Log.i("Api result", result.toString());
-
-                    JSONObject json = new JSONObject(result.toString());
-                    JSONArray phones = json.getJSONArray("phone_list");
-                    for (int i = 0; i < phones.length(); i++) {
-                        JSONObject phone = phones.getJSONObject(i);
-                        Bitmap imageBmp;
-                        try {
-                            URL imageUrl = new URL(URL_DOMAIN + phone.getString("image"));
-                            imageBmp = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
-                        } catch (Exception e){
-                            imageBmp = null;
-                        }
-                        tempPhoneDots.add(new PhoneDto(
-                                phone.getString("name"),
-                                phone.getString("phone"),
-                                phone.getString("image"),
-                                imageBmp));
-                    }
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(tempPhoneDots.size() != 0) {
-                                newPhoneDots = tempPhoneDots;
-                                adapter = new MyBaseAdapter(newPhoneDots);
-                                reFlashListView.setAdapter(adapter);
-                                reFlashListView.onRefreshComplete(true);
-                                adapter.notifyDataSetChanged();
-                            } else {
-                                page = page - 1;
-                                Toast.makeText(MainActivity.this,  " 数据加载完毕...", Toast.LENGTH_SHORT).show();
-                                reFlashListView.onRefreshComplete(true);
-                            }
-                        }
-                    });
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this,  " Fetch api failed.", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } finally {
-                    if (reader != null) {
-                        try {
-                            reader.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    if (connection != null) {//关闭连接
-                        connection.disconnect();
-                    }
-                    ImageView mIvRotate = findViewById(R.id.imageView2);
-                    mIvRotate.clearAnimation();
-                    mIvRotate.setVisibility(View.INVISIBLE);
-                }
-
-            }
-        };
-        thread.start();
     }
 
     private void exportPhones() {
         PhoneUtil phoneUtil = new PhoneUtil(this);
         List<PhoneDto> localPhoneDots = phoneUtil.getPhone();
-        for (PhoneDto phoneDto: newPhoneDots) {
+        for (PhoneDto phoneDto: listModel.getPhoneDtos().getValue()) {
             String name = phoneDto.getName();
             String phone = phoneDto.getTelPhone();
             Bitmap imageBmp = phoneDto.getImageBmp();
@@ -257,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        PhoneDto phoneDto = newPhoneDots.get(position-1);
+        PhoneDto phoneDto = adapter.getItem(position-1);
         Intent intent = new Intent(this, DetailActivity.class);
         intent.putExtra("STATUS", "DETAIL");
         intent.putExtra("NAME", phoneDto.getName());
@@ -275,22 +188,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case 1:
                 if (resultCode == RESULT_OK) {
                     String status = intent.getStringExtra("STATUS");
-                    String name = intent.getStringExtra("NAME");
-                    String phone = intent.getStringExtra("PHONE");
-                    String image = intent.getStringExtra("IMAGE");
+//                    String name = intent.getStringExtra("NAME");
+//                    String phone = intent.getStringExtra("PHONE");
+//                    String image = intent.getStringExtra("IMAGE");
                     int changedPosition = intent.getIntExtra("POSITION", -1);
-                    Log.i("TEST", Integer.toString(page));
+                    Log.i("UPLOAD", Integer.toString(page));
                     switch (status) {
                         case "ADD":
-                            newPhoneDots.add(new PhoneDto(name, phone, image, null));
-                            adapter.notifyDataSetChanged();
-                            getPhoneData("Refresh", page);
+//                            listModel.loadPhoneDtos(listModel.getPage().getValue());
+                            listModel.setPage(listModel.getPage().getValue());
                             break;
                         case "UPDATE":
                             if (changedPosition != -1) {
-                                newPhoneDots.get(changedPosition-1).updatePhoneDto(name, phone, image, null);
-                                adapter.notifyDataSetChanged();
-                                getPhoneData("Refresh", page);
+//                                listModel.loadPhoneDtos(listModel.getPage().getValue());
+                                listModel.setPage(listModel.getPage().getValue());
                             }
                             break;
                     }

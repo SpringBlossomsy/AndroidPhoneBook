@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 android.Manifest.permission.WRITE_CONTACTS,
         };
 
-        if(hasPermissions(MainActivity.this, PERMISSIONS)){
+        if(hasPermissions(MainActivity.this, PERMISSIONS)==false){
             ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS,201);
         } else {
             exportPhones();

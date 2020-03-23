@@ -194,8 +194,13 @@ public class DetailActivity extends AppCompatActivity {
                 case 2:
                     if (data != null) {
                         portraitLocalUri = data.getData();
-                        ImageView portrait = findViewById(R.id.portrait);
-                        portrait.setImageURI(portraitLocalUri);
+//                        ImageView portrait = findViewById(R.id.portrait);
+//                        portrait.setImageURI(portraitLocalUri);
+                        Glide.with(DetailActivity.this)
+                                .load(portraitLocalUri)
+                                .placeholder(R.drawable.portrait)
+                                .error(R.drawable.portrait) //error
+                                .into(binding.portrait);
                     }
                     break;
                 default:

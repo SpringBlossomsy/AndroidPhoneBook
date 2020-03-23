@@ -1,11 +1,6 @@
 package com.example.phonebook.models;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import com.example.phonebook.utils.Constants;
-
-import java.net.URL;
-import java.net.URLConnection;
 
 public class PhoneDto {
     private String name;
@@ -77,53 +72,6 @@ public class PhoneDto {
         this.telPhone = telPhone;
         this.image = image;
         this.imageBmp = imageBmp;
-    }
-
-    public void updatePhoneDto(String name, String telPhone, final String image, final Bitmap newImageBmp) {
-        this.name = name;
-        this.telPhone = telPhone;
-        this.image = image;
-        this.imageBmp = newImageBmp;
-        if (newImageBmp == null) {
-            Thread thread = new Thread() {
-
-                @Override
-                public void run() {
-                    Bitmap tempImageBmp;
-                    try {
-                        URL imageUrl = new URL(Constants.URL_DOMAIN + image);
-                        tempImageBmp = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
-                    } catch (Exception e){
-                        tempImageBmp = null;
-                    }
-                    imageBmp = tempImageBmp;
-                }
-            };
-            thread.start();
-        }
-    }
-
-    public void updateBitmap() {
-        if (this.image != null) {
-            Thread thread = new Thread() {
-
-                @Override
-                public void run() {
-                    Bitmap tempImageBmp;
-                    try {
-                        URL imageUrl = new URL(Constants.URL_DOMAIN + image);
-                        URLConnection conn = imageUrl.openConnection();
-                        conn.connect();
-                        tempImageBmp = BitmapFactory.decodeStream(conn.getInputStream());
-                    } catch (Exception e){
-                        e.printStackTrace();
-                        tempImageBmp = null;
-                    }
-                    imageBmp = tempImageBmp;
-                }
-            };
-            thread.start();
-        }
     }
 
     @Override

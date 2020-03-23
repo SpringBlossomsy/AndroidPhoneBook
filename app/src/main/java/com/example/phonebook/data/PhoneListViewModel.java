@@ -72,6 +72,20 @@ public class PhoneListViewModel extends BaseViewModel {
         return phoneDtos;
     }
 
+    public void setPhoneDtoImageBmp(String name, Bitmap bmp) {
+        if (phoneDtos.getValue() != null) {
+            for (int i=0; i < phoneDtos.getValue().size(); i++) {
+                if (phoneDtos.getValue().get(i).getName().equals(name)) {
+                    phoneDtos.getValue().get(i).setImageBmp(bmp);
+                }
+            }
+//            for (int i=0; i < phoneDtos.getValue().size(); i++) {
+//                System.out.println(phoneDtos.getValue().get(i));
+//            }
+        }
+
+    }
+
     public void loadPhoneDtos(final Integer queryPage) {
         Call<ResponseBody> model = service.getAllPhones(Integer.toString(queryPage));
         model.enqueue(new Callback<ResponseBody>() {
@@ -92,6 +106,24 @@ public class PhoneListViewModel extends BaseViewModel {
                             e.printStackTrace();
                             imageBmp = null;
                         }
+                        final String name = phone.getString("name");
+                        final String image = phone.getString("image");
+                        Thread thread = new Thread() {
+
+                            @Override
+                            public void run() {
+                                Bitmap bmp;
+                                try {
+                                    URL imageUrl = new URL(Constants.URL_DOMAIN + image);
+                                    bmp = BitmapFactory.decodeStream(imageUrl.openConnection().getInputStream());
+                                } catch (Exception e){
+                                    e.printStackTrace();
+                                    bmp = null;
+                                }
+                                setPhoneDtoImageBmp(name, bmp);
+                            }
+                        };
+                        thread.start();
 //                        PhoneDto tempPhone = new PhoneDto(
 //                                phone.getString("name"),
 //                                phone.getString("phone"),
@@ -107,6 +139,7 @@ public class PhoneListViewModel extends BaseViewModel {
                     }
                     if (newPhoneDtos.size() > 0) {
                         phoneDtos.postValue(newPhoneDtos);
+                        setPhoneDtoImageBmp(null,null);
                         setOtherFields(null, "数据加载完成", "message");
                     } else {
                         setOtherFields(Integer.toString(queryPage - new Integer(1)), "没有更多数据...", "both");

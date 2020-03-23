@@ -33,6 +33,7 @@ import retrofit2.Response;
 
 public class PhoneDetailViewModel extends BaseViewModel {
     private MutableLiveData<PhoneDto> phoneDto;
+    public MutableLiveData<String> message;
     private MutableLiveData<String> status;
     private MutableLiveData<String> title;
     private MutableLiveData<String> leftButton;
@@ -47,6 +48,13 @@ public class PhoneDetailViewModel extends BaseViewModel {
             phoneDto = new MutableLiveData<>();
         }
         return phoneDto;
+    }
+
+    public MutableLiveData<String> getMessage() {
+        if (message == null) {
+            message = new MutableLiveData<>();
+        }
+        return message;
     }
 
     public MutableLiveData<String> getStatus() {

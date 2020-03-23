@@ -24,6 +24,7 @@ import com.example.phonebook.models.PhoneDto;
 import com.example.phonebook.utils.PhoneUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.example.phonebook.data.PhoneListViewModel;
@@ -55,19 +56,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 adapter.notifyDataSetChanged();
             }
         });
-        listModel.getPage().observe(this, new Observer<Integer>() {
+        listModel.getOtherFields().observe(this, new Observer<HashMap<String, String>>() {
             @Override
-            public void onChanged(Integer integer) {
-                if (integer != null) {
-                    listModel.loadPhoneDtos(integer);
-                }
-            }
-        });
-        listModel.getMessage().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(String message) {
-                if (message != null) {
-                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+            public void onChanged(HashMap<String, String> otherFields) {
+                if (otherFields != null) {
+                    String page = otherFields.get("page");
+                    String message = otherFields.get("message");
+                    switch (otherFields.get("whichChanged")) {
+                        case "page":
+                            if (page != null) {
+                                listModel.loadPhoneDtos(Integer.parseInt(page));
+                            }
+                            break;
+                        case "message":
+                            if (message != null) {
+                                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                            }
+                            break;
+                        case "both":
+                            if (message != null) {
+                                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                            }
+                            reFlashListView.onRefreshComplete(true);
+                            break;
+                    }
                 }
             }
         });
@@ -76,18 +88,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             @Override
             public void onRefresh() {
                 //TODO: 下拉刷新的时候回调该方法，加载数据
-                Integer newPage = listModel.getPage().getValue();
+                Integer newPage = Integer.parseInt(listModel.getOtherFields().getValue().get("page"));
                 if (newPage > 1){
                     newPage = newPage - new Integer(1);
                 }
-                listModel.getPage().setValue(newPage);
+                listModel.setOtherFields(Integer.toString(newPage), null, "page");
             }
 
             @Override
             public void onLoadMore() {
                 // TODO: 上拉加载下一页数据的回调
-                Integer newPage = listModel.getPage().getValue()+new Integer(1);
-                listModel.getPage().setValue(newPage);
+                Integer newPage = Integer.parseInt(listModel.getOtherFields().getValue().get("page")) + new Integer(1);
+                listModel.setOtherFields(Integer.toString(newPage), null, "page");
             }
         });
     }
@@ -196,12 +208,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     switch (status) {
                         case "ADD":
 //                            listModel.loadPhoneDtos(listModel.getPage().getValue());
-                            listModel.setPage(listModel.getPage().getValue());
+                            listModel.setOtherFields(listModel.getOtherFields().getValue().get("page"), null, "page");
                             break;
                         case "UPDATE":
                             if (changedPosition != -1) {
 //                                listModel.loadPhoneDtos(listModel.getPage().getValue());
-                                listModel.setPage(listModel.getPage().getValue());
+                                listModel.setOtherFields(listModel.getOtherFields().getValue().get("page"), null, "page");
                             }
                             break;
                     }

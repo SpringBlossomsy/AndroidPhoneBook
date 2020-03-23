@@ -9,7 +9,6 @@ import com.example.phonebook.utils.Constants;
 import retrofit2.Retrofit;
 
 public class BaseViewModel extends ViewModel {
-    public MutableLiveData<String> message;
     public Retrofit retrofit;
     public Api service;
 
@@ -19,12 +18,5 @@ public class BaseViewModel extends ViewModel {
                 .baseUrl(Constants.URL_DOMAIN)
                 .build();
         service = retrofit.create(Api.class);
-    }
-
-    public MutableLiveData<String> getMessage() {
-        if (message == null) {
-            message = new MutableLiveData<>();
-        }
-        return message;
     }
 }

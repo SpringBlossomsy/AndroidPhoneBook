@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import okhttp3.ResponseBody;
@@ -28,38 +29,47 @@ import retrofit2.Response;
 
 public class PhoneListViewModel extends BaseViewModel {
     private MutableLiveData<List<PhoneDto>> phoneDtos;
-    private MutableLiveData<Integer> page;
+    private MutableLiveData<HashMap<String, String>> otherFields;
 
     public PhoneListViewModel() {
         super();
-        page = new MutableLiveData<>();
-        page.setValue(1);
+        otherFields = new MutableLiveData<>();
+        HashMap<String, String> tempOtherFields = new HashMap<>();
+        tempOtherFields.put("page", "1");
+        tempOtherFields.put("whichChanged", "page");
+        otherFields.setValue(tempOtherFields);
+    }
+
+    public MutableLiveData<HashMap<String, String>> getOtherFields() {
+        if (otherFields == null) {
+            otherFields = new MutableLiveData<>();
+        }
+        return otherFields;
+    }
+
+    public void setOtherFields(String page, String message, String whichChanged) {
+        HashMap<String, String> tempOtherFields = otherFields.getValue();
+        switch (whichChanged) {
+            case "page":
+                tempOtherFields.put("page", page);
+                break;
+            case "message":
+                tempOtherFields.put("message", message);
+                break;
+            case "both":
+                tempOtherFields.put("page", page);
+                tempOtherFields.put("message", message);
+                break;
+        }
+        tempOtherFields.put("whichChanged", whichChanged);
+        otherFields.setValue(tempOtherFields);
     }
 
     public MutableLiveData<List<PhoneDto>> getPhoneDtos() {
         if (phoneDtos == null) {
             phoneDtos = new MutableLiveData<List<PhoneDto>>();
-//            loadPhoneDtos(page.getValue());
         }
         return phoneDtos;
-    }
-
-    public MutableLiveData<Integer> getPage() {
-        if (page == null) {
-            page = new MutableLiveData<>();
-//            page.setValue(1);
-        }
-        return page;
-    }
-
-    public void setPage(Integer newPage) {
-        page.setValue(newPage);
-    }
-
-    public void addPhoneDto(PhoneDto phoneDto) {
-        if (phoneDto != null) {
-            phoneDtos.getValue().add(phoneDto);
-        }
     }
 
     public void loadPhoneDtos(final Integer queryPage) {
@@ -97,24 +107,23 @@ public class PhoneListViewModel extends BaseViewModel {
                     }
                     if (newPhoneDtos.size() > 0) {
                         phoneDtos.postValue(newPhoneDtos);
-                        message.setValue("数据加载完成");
+                        setOtherFields(null, "数据加载完成", "message");
                     } else {
-                        message.postValue("没有更多数据...");
-                        setPage(queryPage - new Integer(1));
+                        setOtherFields(Integer.toString(queryPage - new Integer(1)), "没有更多数据...", "both");
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    message.setValue("JSON解析错误...");
+                    setOtherFields(null, "JSON解析错误...", "message");
                 } catch (IOException e) {
                     e.printStackTrace();
-                    message.setValue("IO错误...");
+                    setOtherFields(null, "IO错误...", "message");
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 System.out.print(t.getMessage());
-                message.setValue("数据加载失败...");
+                setOtherFields(null, "数据加载失败...", "message");
             }
         });
     }
